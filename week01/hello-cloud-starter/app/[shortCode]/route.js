@@ -1,4 +1,5 @@
 import { findUrlByShortCode } from "../../lib/db";
+import { recordClick } from "../../lib/stats";
 
 export async function GET(request, { params }) {
   const { shortCode } = await params;
@@ -11,6 +12,12 @@ export async function GET(request, { params }) {
   if (!originalUrl) {
     console.warn("Short URL not found", { shortCode });
     return new Response("NOT FOUND", { status: 404 });
+  }
+
+  try {
+    await recordClick(shortCode);
+  } catch (error) {
+    console.error("Failed to record click", { shortCode });
   }
 
   return new Response(null, {
