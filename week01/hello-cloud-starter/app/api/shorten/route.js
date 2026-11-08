@@ -156,6 +156,19 @@ export async function POST(request) {
       );
     }
 
+    const serviceHost = new URL(request.url).hostname;
+
+    if (parsedUrl.hostname.toLowerCase() === serviceHost.toLowerCase()) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "SELF_URL_NOT_ALLOWED",
+            message: "Cannot shorten this service's own URL.",
+          },
+        },
+        { status: 400 }
+      );
+    }
 
     /*
      * 6. Short URL 생성
@@ -165,7 +178,7 @@ export async function POST(request) {
      */
     const shortCode = createShortCode(originalUrl);
 
-    await saveUrl(shortCode, originalUrl);
+    const savedShortCode = await saveUrl(shortCode, originalUrl);
     
     const baseUrl = new URL(request.url).origin;
 
@@ -178,15 +191,14 @@ export async function POST(request) {
      */
     return NextResponse.json(
       {
-        shortCode,
-        shortUrl: `${baseUrl}/${shortCode}`,
+        shortCode: savedShortCode,
         originalUrl,
+        shortUrl: `${baseUrl}/${savedShortCode}`,
       },
       { status: 201 }
     );
 
   } catch {
-
     /*
      * 7. 서버 내부 오류
      *
